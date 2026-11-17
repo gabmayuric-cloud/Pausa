@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pausa</title>
+<meta name="description" content="Pausa: supera el impulso, un minuto a la vez.">
+<meta name="theme-color" content="#0f2027">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pausa">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>
+  :root{
+    --bg:#0f2027; --bg2:#16313b; --card:#1b3a45; --line:#2a5260;
+    --txt:#e8f4f2; --muted:#9bb7b4; --acc:#5eead4; --acc2:#2dd4bf;
+    --warn:#fbbf24; --ok:#86efac; --danger:#fca5a5;
+    --r:18px;
+    --safe-t:env(safe-area-inset-top,0px); --safe-b:env(safe-area-inset-bottom,0px);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%}
+  body{
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    background:radial-gradient(120% 80% at 50% 0%,#1d4350 0%,var(--bg) 60%);
+    color:var(--txt);min-height:100dvh;overscroll-behavior:none;
+  }
+  .app{max-width:480px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column;
+    padding:calc(16px + var(--safe-t)) 20px calc(20px + var(--safe-b))}
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .logo{font-weight:800;font-size:1.35rem;letter-spacing:.5px;display:flex;align-items:center;gap:8px}
+  .logo i{display:inline-block;width:22px;height:22px;border-radius:50%;background:var(--acc);position:relative}
+  .logo i::before,.logo i::after{content:"";position:absolute;top:6px;width:3px;height:10px;border-radius:2px;background:var(--bg)}
+  .logo i::before{left:7px}.logo i::after{right:7px}
+  .iconbtn{background:none;border:1px solid var(--line);color:var(--muted);border-radius:12px;padding:8px 12px;font-size:.9rem}
+  .screen{display:none;flex:1;flex-direction:column;animation:fade .3s ease}
+  .screen.on{display:flex}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  h1{font-size:1.6rem;margin:.4em 0 .2em;line-height:1.2}
+  h2{font-size:1.25rem;margin:.2em 0 .6em}
+  p{color:var(--muted);line-height:1.5;margin:.3em 0 1em}
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:18px 0}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px 14px;text-align:center}
+  .stat b{display:block;font-size:2.2rem;color:var(--acc);font-variant-numeric:tabular-nums}
+  .stat span{color:var(--muted);font-size:.85rem}
+  .big{
+    margin:auto;width:min(72vw,280px);aspect-ratio:1;border-radius:50%;border:none;
+    background:radial-gradient(circle at 35% 30%,#99f6e4,var(--acc2) 55%,#0f766e);
+    color:#06281f;font-size:1.6rem;font-weight:800;box-shadow:0 0 0 10px rgba(94,234,212,.12),0 0 0 22px rgba(94,234,212,.06),0 20px 50px rgba(0,0,0,.4);
+    animation:pulse 3.5s ease-in-out infinite;
+  }
+  .big:active{transform:scale(.97)}
+  @keyframes pulse{50%{box-shadow:0 0 0 14px rgba(94,234,212,.16),0 0 0 30px rgba(94,234,212,.05),0 20px 50px rgba(0,0,0,.4)}}
+  .hint{text-align:center;font-size:.9rem;margin-top:18px}
+  .btn{display:block;width:100%;padding:16px;border-radius:14px;border:none;font-size:1.05rem;font-weight:700;
+    background:var(--acc);color:#06281f;margin-top:12px}
+  .btn.sec{background:transparent;border:1px solid var(--line);color:var(--txt);font-weight:600}
+  .btn.ghost{background:none;color:var(--muted);font-weight:500;font-size:.95rem}
+  .btn:disabled{opacity:.4}
+  .bottom{margin-top:auto;padding-top:16px}
+  .steps{display:flex;gap:6px;margin:6px 0 14px}
+  .steps span{flex:1;height:4px;border-radius:2px;background:var(--line)}
+  .steps span.done{background:var(--acc)}
+  .scale{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:10px 0}
+  .scale button{aspect-ratio:1;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--txt);font-size:1.3rem;font-weight:700}
+  .scale button.sel{background:var(--acc);color:#06281f;border-color:var(--acc)}
+  .scale-lbl{display:flex;justify-content:space-between;color:var(--muted);font-size:.8rem}
+  .breath{position:relative;width:min(70vw,260px);aspect-ratio:1;margin:24px auto 10px;display:grid;place-items:center}
+  .breath .ring{position:absolute;inset:0;border-radius:50%;border:2px dashed var(--line)}
+  .breath .ball{width:100%;height:100%;border-radius:50%;
+    background:radial-gradient(circle at 40% 35%,#ccfbf1,var(--acc) 50%,#0d9488);
+    transform:scale(.45);transition-property:transform;transition-timing-function:ease-in-out;opacity:.9}
+  .breath .lbl{position:absolute;text-align:center;color:#06281f;font-weight:800;font-size:1.3rem;pointer-events:none}
+  .breath .lbl small{display:block;font-size:2rem}
+  .center{text-align:center}
+  .muted{color:var(--muted)}
+  .reasons{list-style:none;padding:0;margin:8px 0}
+  .reasons li{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--acc);border-radius:12px;padding:14px;margin-bottom:10px;font-size:1.05rem;line-height:1.4;display:flex;gap:10px;align-items:flex-start}
+  .reasons li span{flex:1;white-space:pre-wrap;word-break:break-word}
+  .reasons li button{background:none;border:none;color:var(--muted);font-size:1.1rem;padding:0 4px}
+  textarea,input[type=text]{width:100%;background:var(--bg2);border:1px solid var(--line);color:var(--txt);border-radius:12px;padding:12px;font:inherit;font-size:1rem}
+  textarea{min-height:80px;resize:vertical}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
+  .opt{background:var(--card);border:1px solid var(--line);color:var(--txt);border-radius:14px;padding:16px 10px;font-size:1rem;font-weight:600;text-align:center}
+  .opt .e{display:block;font-size:1.8rem;margin-bottom:4px}
+  .opt.sel{border-color:var(--acc);background:#1f4f57;box-shadow:inset 0 0 0 1px var(--acc)}
+  .opt.wide{grid-column:1/-1}
+  .timer{position:relative;width:min(72vw,270px);aspect-ratio:1;margin:20px auto}
+  .timer svg{width:100%;height:100%;transform:rotate(-90deg)}
+  .timer .t{position:absolute;inset:0;display:grid;place-items:center;text-align:center}
+  .timer .t b{font-size:3rem;font-variant-numeric:tabular-nums;display:block}
+  .timer .t span{color:var(--muted)}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+  .chip{border:1px solid var(--line);background:var(--card);color:var(--txt);border-radius:999px;padding:10px 14px;font-size:.95rem}
+  .chip.sel{background:var(--acc);color:#06281f;border-color:var(--acc);font-weight:700}
+  .hist{list-style:none;padding:0;margin:0}
+  .hist li{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px;font-size:.92rem}
+  .hist .row{display:flex;justify-content:space-between;gap:8px}
+  .tag{font-size:.75rem;padding:2px 8px;border-radius:999px;font-weight:700}
+  .tag.ok{background:rgba(134,239,172,.15);color:var(--ok)}
+  .tag.no{background:rgba(252,165,165,.12);color:var(--danger)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin:10px 0}
+  .celebrate{font-size:4rem;text-align:center;margin-top:20px}
+  .note{font-size:.8rem;color:var(--muted);text-align:center;margin-top:14px}
+  .row-btns{display:flex;gap:10px}
+  .row-btns .btn{margin-top:12px}
+  a{color:var(--acc)}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo"><i></i>Pausa</div>
+    <button class="iconbtn" id="btnMenu" aria-label="Menú">☰</button>
+  </header>
+
+  <!-- INICIO -->
+  <section class="screen on" id="s-home">
+    <div class="stats">
+      <div class="stat"><b id="stVict">0</b><span>impulsos superados</span></div>
+      <div class="stat"><b id="stSoles">S/ 0</b><span>soles ahorrados</span></div>
+    </div>
+    <button class="big" id="btnGanas">Tengo ganas</button>
+    <p class="hint" id="homeMsg">Respira. Las ganas suben, llegan a un pico y bajan.</p>
+    <div class="bottom">
+      <button class="btn sec" id="btnResume" style="display:none">Continuar donde me quedé</button>
+    </div>
+  </section>
+
+  <!-- 1 INTENSIDAD -->
+  <section class="screen" id="s-int">
+    <div class="steps" data-step="1"></div>
+    <h1>¿Qué tan fuertes son las ganas?</h1>
+    <p>Del 1 (apenas) al 10 (muy intensas). No hay respuesta incorrecta.</p>
+    <div class="scale" id="scale"></div>
+    <div class="scale-lbl"><span>Leves</span><span>Muy fuertes</span></div>
+    <div class="bottom">
+      <button class="btn" id="btnInt" disabled>Siguiente</button>
+      <button class="btn ghost" data-cancel>Cancelar</button>
+    </div>
+  </section>
+
+  <!-- 2 RESPIRACIÓN -->
+  <section class="screen" id="s-resp">
+    <div class="steps" data-step="2"></div>
+    <h2 class="center">Respira conmigo · 1 minuto</h2>
+    <p class="center">Inhala 4 · Sostén 4 · Exhala 6</p>
+    <div class="breath">
+      <div class="ring"></div>
+      <div class="ball" id="ball"></div>
+      <div class="lbl" id="bLbl">Listo<small>&nbsp;</small></div>
+    </div>
+    <p class="center" id="bLeft">60 s</p>
+    <div class="bottom">
+      <button class="btn" id="btnResp" disabled>Siguiente</button>
+      <button class="btn ghost" id="btnRespSkip">Saltar</button>
+    </div>
+  </section>
+
+  <!-- 3 RAZONES -->
+  <section class="screen" id="s-raz">
+    <div class="steps" data-step="3"></div>
+    <h1>Tus razones</h1>
+    <p id="razIntro">Léelas despacio. Las escribiste tú.</p>
+    <ul class="reasons" id="razList"></ul>
+    <div id="razAdd">
+      <textarea id="razTxt" placeholder="Escribe una razón para no ceder (p. ej. «Quiero llegar a fin de mes tranquilo»)"></textarea>
+      <button class="btn sec" id="btnRazAdd">Agregar razón</button>
+    </div>
+    <div class="bottom">
+      <button class="btn" id="btnRaz">Siguiente</button>
+    </div>
+  </section>
+
+  <!-- 4 ACCIÓN -->
+  <section class="screen" id="s-acc">
+    <div class="steps" data-step="4"></div>
+    <h1>Elige qué hacer ahora</h1>
+    <p>20 minutos ocupado en otra cosa. Las ganas suelen bajar en ese tiempo.</p>
+    <div class="grid2" id="accGrid"></div>
+    <div class="bottom">
+      <button class="btn" id="btnAcc" disabled>Empezar 20 minutos</button>
+    </div>
+  </section>
+
+  <!-- 4b TEMPORIZADOR -->
+  <section class="screen" id="s-tim">
+    <div class="steps" data-step="4"></div>
+    <h2 class="center" id="timTitle">Caminar</h2>
+    <div class="timer">
+      <svg viewBox="0 0 120 120">
+        <circle cx="60" cy="60" r="54" fill="none" stroke="var(--line)" stroke-width="8"/>
+        <circle id="timArc" cx="60" cy="60" r="54" fill="none" stroke="var(--acc)" stroke-width="8" stroke-linecap="round" stroke-dasharray="339.3" stroke-dashoffset="0"/>
+      </svg>
+      <div class="t"><div><b id="timTxt">20:00</b><span id="timSub">quedan</span></div></div>
+    </div>
+    <p class="center" id="timMsg">Puedes cerrar la app, el tiempo sigue corriendo.</p>
+    <div class="bottom">
+      <button class="btn sec" id="btnTimEnd">Ya terminé</button>
+    </div>
+  </section>
+
+  <!-- 5 CHEQUEO -->
+  <section class="screen" id="s-chk">
+    <div class="steps" data-step="5"></div>
+    <h1>¿Pasaron las ganas?</h1>
+    <p>Sé honesto contigo. Cualquier respuesta sirve para aprender.</p>
+    <div class="bottom">
+      <button class="btn" id="btnSi">Sí, ya pasaron</button>
+      <button class="btn sec" id="btnMas">Todavía no · 10 minutos más</button>
+      <button class="btn ghost" id="btnNo">No pasaron, cedí</button>
+    </div>
+  </section>
+
+  <!-- 6 DETONANTE -->
+  <section class="screen" id="s-det">
+    <div class="steps" data-step="6"></div>
+    <h1>¿Qué lo detonó?</h1>
+    <p>Reconocer el detonante te ayuda a verlo venir la próxima vez.</p>
+    <div class="chips" id="detChips"></div>
+    <input type="text" id="detOtro" placeholder="Otro / detalle (opcional)">
+    <div class="bottom">
+      <button class="btn" id="btnDet">Guardar</button>
+    </div>
+  </section>
+
+  <!-- FIN -->
+  <section class="screen" id="s-fin">
+    <div class="celebrate" id="finEmoji">🎉</div>
+    <h1 class="center" id="finTitle">¡Lo lograste!</h1>
+    <p class="center" id="finMsg"></p>
+    <div class="bottom">
+      <button class="btn" id="btnFin">Volver al inicio</button>
+    </div>
+  </section>
+
+  <!-- MENÚ -->
+  <section class="screen" id="s-menu">
+    <h1>Mi registro</h1>
+    <div class="card" id="resumen"></div>
+    <h2>Mis razones</h2>
+    <ul class="reasons" id="menuRaz"></ul>
+    <textarea id="menuRazTxt" placeholder="Nueva razón"></textarea>
+    <button class="btn sec" id="btnMenuRaz">Agregar razón</button>
+    <h2 style="margin-top:24px">Historial</h2>
+    <ul class="hist" id="histList"></ul>
+    <div class="bottom">
+      <button class="btn" id="btnMenuBack">Volver</button>
+      <button class="btn ghost" id="btnExport">Exportar mis datos (JSON)</button>
+      <button class="btn ghost" id="btnReset" style="color:var(--danger)">Borrar todos mis datos</button>
+      <p class="note">Tus datos se guardan solo en este teléfono (localStorage). No se envían a ningún servidor.</p>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+  const KEY = 'pausa.datos.v1', FLOW = 'pausa.flujo.v1';
+  const SOLES = 100, MIN_ACCION = 20, MIN_EXTRA = 10;
+  const ACCIONES = [
+    {id:'caminar', e:'🚶', t:'Caminar'},
+    {id:'ducha', e:'🚿', t:'Ducha'},
+    {id:'flexiones', e:'💪', t:'Flexiones'},
+    {id:'comer', e:'🍎', t:'Comer algo'},
+    {id:'llamar', e:'📞', t:'Llamar a alguien', wide:true},
+  ];
+  const DETONANTES = ['Estrés','Aburrimiento','Soledad','Cansancio','Ansiedad','Discusión','Tristeza','Celebración','Un anuncio / notificación','Tener dinero a mano','Ver a alguien hacerlo','Hora del día'];
+
+  const $ = s => document.querySelector(s);
+  const $$ = s => [...document.querySelectorAll(s)];
+  const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
+  const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  let datos = Object.assign({victorias:0, razones:[], historial:[]}, load(KEY, {}));
+  let flujo = load(FLOW, null);
+  const guardarDatos = () => save(KEY, datos);
+  const guardarFlujo = () => flujo ? save(FLOW, flujo) : localStorage.removeItem(FLOW);
+
+  // ---------- navegación ----------
+  function show(id){
+    $$('.screen').forEach(s => s.classList.toggle('on', s.id === id));
+    window.scrollTo(0,0);
+    if (flujo) { flujo.pantalla = id; guardarFlujo(); }
+  }
+  $$('.steps').forEach(el => {
+    const n = +el.dataset.step;
+    el.innerHTML = Array.from({length:6}, (_,i) => `<span class="${i < n ? 'done':''}"></span>`).join('');
+  });
+
+  // ---------- inicio ----------
+  function renderHome(){
+    $('#stVict').textContent = datos.victorias;
+    $('#stSoles').textContent = 'S/ ' + (datos.victorias * SOLES).toLocaleString('es-PE');
+    const msgs = ['Respira. Las ganas suben, llegan a un pico y bajan.','Cada pausa cuenta.','No tienes que decidir nada ahora. Solo pausa.','Las ganas son una ola: puedes surfearla.'];
+    $('#homeMsg').textContent = datos.victorias ? msgs[datos.victorias % msgs.length] : msgs[0];
+    $('#btnResume').style.display = flujo ? 'block' : 'none';
+  }
+  $('#btnGanas').onclick = () => {
+    flujo = {inicio: Date.now(), intensidad:null, accion:null, fin:null, extras:0};
+    guardarFlujo(); renderScale(); show('s-int');
+  };
+  $('#btnResume').onclick = () => reanudar();
+  $$('[data-cancel]').forEach(b => b.onclick = () => { flujo = null; guardarFlujo(); renderHome(); show('s-home'); });
+
+  // ---------- 1 intensidad ----------
+  function renderScale(){
+    $('#scale').innerHTML = Array.from({length:10},(_,i)=>`<button data-v="${i+1}" class="${flujo?.intensidad===i+1?'sel':''}">${i+1}</button>`).join('');
+    $('#btnInt').disabled = !flujo?.intensidad;
+  }
+  $('#scale').onclick = e => {
+    const v = +e.target.dataset.v; if (!v) return;
+    flujo.intensidad = v; guardarFlujo(); renderScale();
+  };
+  $('#btnInt').onclick = () => { show('s-resp'); startBreath(); };
+
+  // ---------- 2 respiración 4-4-6 ----------
+  let bTimers = [];
+  function stopBreath(){ bTimers.forEach(clearTimeout); bTimers.forEach(clearInterval); bTimers = []; }
+  function startBreath(){
+    stopBreath();
+    const ball = $('#ball'), lbl = $('#bLbl');
+    const fases = [{t:'Inhala',d:4,s:1},{t:'Sostén',d:4,s:1},{t:'Exhala',d:6,s:.45}];
+    const total = 60, t0 = Date.now();
+    $('#btnResp').disabled = true;
+    ball.style.transitionDuration = '0s'; ball.style.transform = 'scale(.45)';
+    let i = 0;
+    const fase = () => {
+      const f = fases[i % 3];
+      ball.style.transitionDuration = f.d + 's';
+      ball.style.transform = `scale(${f.s})`;
+      let n = f.d;
+      lbl.innerHTML = `${f.t}<small>${n}</small>`;
+      const iv = setInterval(() => { n--; if (n > 0) lbl.innerHTML = `${f.t}<small>${n}</small>`; else clearInterval(iv); }, 1000);
+      bTimers.push(iv);
+      i++;
+      bTimers.push(setTimeout(fase, f.d * 1000));
+    };
+    bTimers.push(setTimeout(fase, 50));
+    const cd = setInterval(() => {
+      const left = Math.max(0, total - Math.floor((Date.now() - t0)/1000));
+      $('#bLeft').textContent = left + ' s';
+      if (left <= 0) {
+        stopBreath();
+        ball.style.transitionDuration = '2s'; ball.style.transform = 'scale(.7)';
+        lbl.innerHTML = 'Bien hecho<small>✓</small>';
+        $('#btnResp').disabled = false;
+        vibrar([60]);
+      }
+    }, 250);
+    bTimers.push(cd);
+  }
+  const irRazones = () => { stopBreath(); renderRazones(); show('s-raz'); };
+  $('#btnResp').onclick = irRazones;
+  $('#btnRespSkip').onclick = irRazones;
+
+  // ---------- 3 razones ----------
+  function listaRazones(ul, borrar){
+    ul.innerHTML = datos.razones.map((r,i)=>`<li><span>${esc(r)}</span>${borrar?`<button data-del="${i}" aria-label="Borrar">✕</button>`:''}</li>`).join('');
+  }
+  function renderRazones(){
+    listaRazones($('#razList'), false);
+    const vacio = !datos.razones.length;
+    $('#razIntro').textContent = vacio ? 'Aún no tienes razones guardadas. Escribe al menos una: ¿por qué quieres dejarlo?' : 'Léelas despacio. Las escribiste tú.';
+    $('#razTxt').placeholder = vacio ? 'Escribe una razón para no ceder (p. ej. «Quiero llegar a fin de mes tranquilo»)' : 'Agregar otra razón (opcional)';
+  }
+  function agregarRazon(txtEl){
+    const v = txtEl.value.trim(); if (!v) return;
+    datos.razones.push(v); guardarDatos(); txtEl.value = '';
+  }
+  $('#btnRazAdd').onclick = () => { agregarRazon($('#razTxt')); renderRazones(); };
+  $('#btnRaz').onclick = () => {
+    if ($('#razTxt').value.trim()) agregarRazon($('#razTxt'));
+    renderAcciones(); show('s-acc');
+  };
+
+  // ---------- 4 acción + temporizador ----------
+  function renderAcciones(){
+    $('#accGrid').innerHTML = ACCIONES.map(a=>`<button class="opt ${a.wide?'wide':''} ${flujo.accion===a.id?'sel':''}" data-a="${a.id}"><span class="e">${a.e}</span>${a.t}</button>`).join('');
+    $('#btnAcc').disabled = !flujo.accion;
+  }
+  $('#accGrid').onclick = e => {
+    const b = e.target.closest('[data-a]'); if (!b) return;
+    flujo.accion = b.dataset.a; guardarFlujo(); renderAcciones();
+  };
+  $('#btnAcc').onclick = () => iniciarTimer(MIN_ACCION);
+
+  let tIv = null;
+  function iniciarTimer(min){
+    flujo.dur = min * 60000;
+    flujo.fin = Date.now() + flujo.dur;
+    guardarFlujo();
+    abrirTimer();
+    pedirNotif();
+  }
+  function abrirTimer(){
+    const a = ACCIONES.find(x=>x.id===flujo.accion);
+    $('#timTitle').textContent = `${a?.e||''} ${a?.t||''}`;
+    $('#timMsg').textContent = flujo.extras ? 'Diez minutos más. Ya hiciste lo más difícil.' : 'Puedes cerrar la app, el tiempo sigue corriendo.';
+    show('s-tim');
+    clearInterval(tIv);
+    const tick = () => {
+      const left = Math.max(0, flujo.fin - Date.now());
+      const m = Math.floor(left/60000), s = Math.floor(left/1000)%60;
+      $('#timTxt').textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+      $('#timArc').style.strokeDashoffset = 339.3 * (1 - left / flujo.dur);
+      if (left <= 0) { clearInterval(tIv); finTimer(); }
+    };
+    tick(); tIv = setInterval(tick, 500);
+  }
+  function finTimer(){
+    vibrar([200,100,200]); beep(); notificar();
+    show('s-chk');
+  }
+  $('#btnTimEnd').onclick = () => { clearInterval(tIv); show('s-chk'); };
+
+  // ---------- 5 chequeo ----------
+  $('#btnSi').onclick = () => { flujo.resultado = 'superado'; guardarFlujo(); renderDet(); show('s-det'); };
+  $('#btnMas').onclick = () => { flujo.extras++; guardarFlujo(); iniciarTimer(MIN_EXTRA); };
+  $('#btnNo').onclick = () => { flujo.resultado = 'cedi'; guardarFlujo(); renderDet(); show('s-det'); };
+
+  // ---------- 6 detonante ----------
+  function renderDet(){
+    const sel = flujo.detonantes || [];
+    $('#detChips').innerHTML = DETONANTES.map(d=>`<button class="chip ${sel.includes(d)?'sel':''}" data-d="${esc(d)}">${esc(d)}</button>`).join('');
+  }
+  $('#detChips').onclick = e => {
+    const d = e.target.dataset.d; if (!d) return;
+    const sel = flujo.detonantes = flujo.detonantes || [];
+    const i = sel.indexOf(d); i >= 0 ? sel.splice(i,1) : sel.push(d);
+    guardarFlujo(); renderDet();
+  };
+  $('#btnDet').onclick = () => {
+    const gano = flujo.resultado === 'superado';
+    datos.historial.unshift({
+      fecha: new Date(flujo.inicio).toISOString(),
+      intensidad: flujo.intensidad, accion: flujo.accion, extras: flujo.extras,
+      resultado: flujo.resultado, detonantes: flujo.detonantes || [], nota: $('#detOtro').value.trim(),
+    });
+    if (gano) datos.victorias++;
+    guardarDatos(); $('#detOtro').value = '';
+    flujo = null; guardarFlujo();
+    $('#finEmoji').textContent = gano ? '🎉' : '🌱';
+    $('#finTitle').textContent = gano ? '¡Lo lograste!' : 'Gracias por registrarlo';
+    $('#finMsg').textContent = gano
+      ? `Llevas ${datos.victorias} ${datos.victorias===1?'impulso superado':'impulsos superados'} y S/ ${(datos.victorias*SOLES).toLocaleString('es-PE')} ahorrados.`
+      : 'Un tropiezo no borra lo que llevas avanzado. Lo que anotaste hoy te ayuda a verlo venir la próxima vez.';
+    show('s-fin');
+  };
+  $('#btnFin').onclick = () => { renderHome(); show('s-home'); };
+
+  // ---------- menú / historial ----------
+  const fmt = iso => new Date(iso).toLocaleString('es-PE',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+  function renderMenu(){
+    const h = datos.historial;
+    const cedi = h.filter(x=>x.resultado==='cedi').length;
+    const cnt = {};
+    h.forEach(x => x.detonantes.forEach(d => cnt[d] = (cnt[d]||0)+1));
+    const top = Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([d,n])=>`${esc(d)} (${n})`).join(', ');
+    const prom = h.length ? (h.reduce((s,x)=>s+(x.intensidad||0),0)/h.length).toFixed(1) : '–';
+    $('#resumen').innerHTML = `
+      <div><b style="color:var(--acc)">${datos.victorias}</b> superados · <b>${cedi}</b> cedí · S/ ${(datos.victorias*SOLES).toLocaleString('es-PE')}</div>
+      <div class="muted" style="margin-top:6px">Intensidad promedio: ${prom}</div>
+      <div class="muted" style="margin-top:4px">Detonantes más frecuentes: ${top || '–'}</div>`;
+    listaRazones($('#menuRaz'), true);
+    if (!datos.razones.length) $('#menuRaz').innerHTML = '<li class="muted"><span>Aún no hay razones.</span></li>';
+    $('#histList').innerHTML = h.length ? h.map(x => {
+      const a = ACCIONES.find(y=>y.id===x.accion);
+      return `<li><div class="row"><span>${fmt(x.fecha)}</span><span class="tag ${x.resultado==='superado'?'ok':'no'}">${x.resultado==='superado'?'Superado':'Cedí'}</span></div>
+        <div class="muted" style="margin-top:4px">Intensidad ${x.intensidad} · ${a?a.e+' '+a.t:''}${x.extras?` · +${x.extras*MIN_EXTRA} min`:''}</div>
+        ${x.detonantes.length||x.nota?`<div style="margin-top:4px">${esc(x.detonantes.join(', '))}${x.nota?(x.detonantes.length?' · ':'')+esc(x.nota):''}</div>`:''}</li>`;
+    }).join('') : '<li class="muted">Todavía no hay registros.</li>';
+  }
+  let pantallaPrevia = 's-home';
+  $('#btnMenu').onclick = () => {
+    const actual = $('.screen.on').id;
+    if (actual === 's-menu') return volverMenu();
+    pantallaPrevia = actual;
+    renderMenu();
+    $$('.screen').forEach(s => s.classList.toggle('on', s.id === 's-menu'));
+    window.scrollTo(0,0);
+  };
+  function volverMenu(){
+    $$('.screen').forEach(s => s.classList.toggle('on', s.id === pantallaPrevia));
+    if (pantallaPrevia === 's-home') renderHome();
+    if (pantallaPrevia === 's-raz') renderRazones();
+  }
+  $('#btnMenuBack').onclick = volverMenu;
+  $('#menuRaz').onclick = e => {
+    const i = e.target.dataset.del; if (i === undefined) return;
+    if (!confirm('¿Borrar esta razón?')) return;
+    datos.razones.splice(+i,1); guardarDatos(); renderMenu();
+  };
+  $('#btnMenuRaz').onclick = () => { agregarRazon($('#menuRazTxt')); renderMenu(); };
+  $('#btnExport').onclick = () => {
+    const blob = new Blob([JSON.stringify(datos,null,2)],{type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `pausa-${new Date().toISOString().slice(0,10)}.json`;
+    a.click(); setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+  };
+  $('#btnReset').onclick = () => {
+    if (!confirm('Esto borra tu contador, razones e historial de este teléfono. ¿Continuar?')) return;
+    localStorage.removeItem(KEY); localStorage.removeItem(FLOW);
+    datos = {victorias:0, razones:[], historial:[]}; flujo = null;
+    pantallaPrevia = 's-home'; volverMenu();
+  };
+
+  // ---------- reanudar flujo pendiente ----------
+  function reanudar(){
+    if (!flujo) return show('s-home');
+    const p = flujo.pantalla;
+    if (flujo.fin && (p === 's-tim')) return Date.now() >= flujo.fin ? show('s-chk') : abrirTimer();
+    if (p === 's-chk') return show('s-chk');
+    if (p === 's-det') { renderDet(); return show('s-det'); }
+    if (p === 's-acc') { renderAcciones(); return show('s-acc'); }
+    if (p === 's-raz') { renderRazones(); return show('s-raz'); }
+    if (p === 's-resp') { show('s-resp'); return startBreath(); }
+    renderScale(); show('s-int');
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && flujo?.fin && $('#s-tim').classList.contains('on') && Date.now() >= flujo.fin) {
+      clearInterval(tIv); show('s-chk');
+    }
+  });
+
+  // ---------- avisos ----------
+  function vibrar(p){ try { navigator.vibrate && navigator.vibrate(p); } catch {} }
+  function beep(){
+    try {
+      const ctx = new (window.AudioContext||window.webkitAudioContext)();
+      [0,.35].forEach(t => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.frequency.value = 660; o.connect(g); g.connect(ctx.destination);
+        g.gain.setValueAtTime(.0001, ctx.currentTime+t);
+        g.gain.exponentialRampToValueAtTime(.2, ctx.currentTime+t+.02);
+        g.gain.exponentialRampToValueAtTime(.0001, ctx.currentTime+t+.3);
+        o.start(ctx.currentTime+t); o.stop(ctx.currentTime+t+.32);
+      });
+    } catch {}
+  }
+  function pedirNotif(){ try { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); } catch {} }
+  function notificar(){
+    try {
+      if (!('Notification' in window) || Notification.permission !== 'granted' || document.visibilityState === 'visible') return;
+      navigator.serviceWorker?.ready.then(r => r.showNotification('Pausa', {body:'Terminó el tiempo. ¿Pasaron las ganas?', icon:'icons/icon-192.png', tag:'pausa-timer'}));
+    } catch {}
+  }
+
+  // ---------- arranque ----------
+  renderHome();
+  if (flujo) reanudar();
+  if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(()=>{}));
+})();
+</script>
+</body>
+</html>
